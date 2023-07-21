@@ -14,6 +14,7 @@
 /// This guarantees better performance and consistency
 /// across various platforms.
 #[global_allocator]
+#[cfg(not(target_arch = "wasm32"))]
 static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
 /// The byte array holding the program's icon to display
@@ -25,7 +26,7 @@ use egui::*;
 mod app;
 use app::*;
 
-/// The program entry point
+#[cfg(not(target_arch = "wasm32"))]
 fn main() {
 	let native_options = eframe::NativeOptions {
 		icon_data: Some(eframe::IconData {
@@ -43,4 +44,22 @@ fn main() {
 		native_options,
 		Box::new(|cc| Box::new(App::new(cc))),
 	);
+}
+
+#[cfg(target_arch = "wasm32")]
+fn main() {
+    eframe::WebLogger::init(log::LevelFilter::Debug).ok();
+
+    let web_options = eframe::WebOptions::default();
+
+    wasm_bindgen_futures::spawn_local(async {
+        eframe::WebRunner::new()
+            .start(
+                "the_canvas_id",
+                web_options,
+                Box::new(|cc| Box::new(eframe_template::TemplateApp::new(cc))),
+            )
+            .await
+            .expect("failed to start eframe");
+    });
 }
